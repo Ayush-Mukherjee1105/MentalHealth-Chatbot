@@ -1,0 +1,26 @@
+# Ignore virtual environment
+myenv/
+venv/
+env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore model weights and tokenizer folders
+saved_model/
+
+# Ignore data outputs
+outputs/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore Streamlit cache
+.streamlit/
