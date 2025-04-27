@@ -6,3 +6,6 @@ seaborn
 transformers
 tensorflow
 streamlit
+nltk
+word
+tf-keras

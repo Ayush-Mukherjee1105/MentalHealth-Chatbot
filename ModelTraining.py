@@ -1,3 +1,5 @@
+# ModelTraining.py
+
 import pandas as pd
 import numpy as np
 import tensorflow as tf
@@ -7,66 +9,85 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-# Create output folder if not exist
-os.makedirs('outputs', exist_ok=True)
+# Function to force GPU usage
+def force_gpu_usage():
+    gpus = tf.config.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Set memory growth to avoid allocation issues
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            print(f"✅ Running on GPU: {gpus}")
+        except RuntimeError as e:
+            print(f"❌ GPU setup failed: {e}")
+    else:
+        print("❌ No GPU found. Running on CPU.")
 
-# 1. Load preprocessed data
+# Call the function to force GPU usage
+force_gpu_usage()
+# Load data
 train_df = pd.read_csv('train.csv')
 test_df = pd.read_csv('test.csv')
 
-# 2. Load BERT tokenizer
+# Load tokenizer
 tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
-# 3. Tokenize datasets
+# Correct tokenize function
 def tokenize_data(texts, labels, max_len=128):
-    tokens = tokenizer(
-        list(texts),
-        max_length=max_len,
+    texts = texts.astype(str).tolist()  # Ensure list of strings
+    labels = labels.tolist()
+
+    encodings = tokenizer.batch_encode_plus(
+        texts,
         padding='max_length',
         truncation=True,
+        max_length=max_len,
         return_tensors='tf'
     )
-    return tokens, tf.convert_to_tensor(labels)
+    return encodings, tf.convert_to_tensor(labels)
 
+# Tokenize
 X_train_tokens, y_train = tokenize_data(train_df['text'], train_df['label'])
 X_test_tokens, y_test = tokenize_data(test_df['text'], test_df['label'])
 
-# 4. Load Pretrained BERT Model
+# Load model
 num_classes = len(train_df['label'].unique())
 model = TFBertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=num_classes)
 
-# 5. Compile Model
+# Compile
 optimizer = tf.keras.optimizers.Adam(learning_rate=2e-5)
 loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 metrics = ['accuracy']
 
 model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
-# 6. Train Model
+# Train
 history = model.fit(
-    X_train_tokens.data,
+    X_train_tokens,
     y_train,
-    validation_data=(X_test_tokens.data, y_test),
+    validation_data=(X_test_tokens, y_test),
     epochs=4,
     batch_size=16
 )
 
-# 7. Save Model
+# Save model
+os.makedirs('saved_model', exist_ok=True)
 model.save_pretrained('saved_model')
 tokenizer.save_pretrained('saved_model')
-print("Model saved inside /saved_model folder.")
 
-# 8. Plot Training History
+print("✅ Model saved!")
+
+# Save graphs
+os.makedirs('outputs', exist_ok=True)
+
 plt.figure(figsize=(12,5))
 
-# Accuracy
 plt.subplot(1,2,1)
 plt.plot(history.history['accuracy'], label='Train Acc')
 plt.plot(history.history['val_accuracy'], label='Val Acc')
 plt.title('Accuracy')
 plt.legend()
 
-# Loss
 plt.subplot(1,2,2)
 plt.plot(history.history['loss'], label='Train Loss')
 plt.plot(history.history['val_loss'], label='Val Loss')
@@ -74,21 +95,4 @@ plt.title('Loss')
 plt.legend()
 
 plt.savefig('outputs/metrics.png')
-plt.show()
-
-# 9. Evaluation
-y_pred_logits = model.predict(X_test_tokens.data).logits
-y_pred = np.argmax(y_pred_logits, axis=1)
-
-print(classification_report(y_test, y_pred))
-
-# Confusion Matrix
-cm = confusion_matrix(y_test, y_pred)
-
-plt.figure(figsize=(8,6))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-plt.title('Confusion Matrix')
-plt.xlabel('Predicted')
-plt.ylabel('Actual')
-plt.savefig('outputs/confusion_matrix.png')
 plt.show()
