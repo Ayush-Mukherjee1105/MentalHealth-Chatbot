@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from transformers import pipeline
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 # === Load .env ===
 load_dotenv()
@@ -72,3 +73,9 @@ async def chat(request: ChatRequest):
 
     except Exception as e:
         return {"error": str(e)}
+    
+    
+
+@app.get("/")
+async def root():
+    return FileResponse(os.path.join("static", "index.html"))
