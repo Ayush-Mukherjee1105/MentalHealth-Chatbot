@@ -1,68 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Mental Health Chatbot</title>
-  <style>
-    body { font-family: sans-serif; background: #f5f5f5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-    .chat { flex: 1; padding: 1rem; overflow-y: auto; }
-    .bubble { max-width: 70%; margin: 0.5rem 0; padding: 0.8rem; border-radius: 1rem; line-height: 1.4; }
-    .user { background: #0084ff; color: white; margin-left: auto; }
-    .bot { background: #e0e0e0; color: #333; margin-right: auto; }
-    .emotion { font-size: 0.8rem; color: #555; margin-top: 0.2rem; }
-    .input-box { display: flex; padding: 1rem; background: white; }
-    input { flex: 1; padding: 0.8rem; border: 1px solid #ddd; border-radius: 1rem; font-size: 1rem; }
-    button { margin-left: 0.5rem; padding: 0.8rem 1.2rem; border: none; border-radius: 1rem; background: #0084ff; color: white; font-size: 1rem; cursor: pointer; }
-  </style>
+    <title>Mental Health Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background: #f7f7f7; }
+        #chat { max-width: 600px; margin: 50px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .bubble { padding: 12px 18px; border-radius: 18px; margin: 10px 0; max-width: 80%; line-height: 1.5; white-space: pre-wrap; }
+        .user { background: #007bff; color: white; margin-left: auto; text-align: right; }
+        .bot { background: #e0e0e0; color: black; margin-right: auto; text-align: left; position: relative; }
+        #messages { max-height: 500px; overflow-y: auto; }
+        #inputBox { width: 75%; padding: 12px; border-radius: 20px; border: 1px solid #ccc; }
+        #sendBtn { padding: 12px 20px; border: none; background: #007bff; color: white; border-radius: 20px; cursor: pointer; }
+        #sendBtn:hover { background: #0056b3; }
+        .emoji { font-size: 1.2em; margin-right: 8px; }
+    </style>
 </head>
 <body>
 
-  <div class="chat" id="chat"></div>
-
-  <div class="input-box">
-    <input id="message" placeholder="Type your message..." />
-    <button onclick="sendMessage()">Send</button>
-  </div>
+<div id="chat">
+    <h2>🧠 Mental Health Chatbot</h2>
+    <div id="messages"></div>
+    <input id="inputBox" placeholder="Type your message..." />
+    <button id="sendBtn">Send</button>
+</div>
 
 <script>
-  const chat = document.getElementById('chat');
+const messages = document.getElementById('messages');
+const inputBox = document.getElementById('inputBox');
+const sendBtn = document.getElementById('sendBtn');
 
-  function addBubble(text, sender, emotion='') {
+function emotionToEmoji(emotion) {
+    const map = {
+        joy: "😊",
+        sadness: "😢",
+        anger: "😠",
+        fear: "😨",
+        love: "❤️",
+        surprise: "😲",
+        disgust: "🤢",
+        neutral: "😐"
+    };
+    return map[emotion.toLowerCase()] || "🧠";
+}
+
+function addMessage(text, sender, emotion = null) {
     const div = document.createElement('div');
-    div.className = `bubble ${sender}`;
-    div.innerHTML = text;
-    if (emotion) {
-      const emo = document.createElement('div');
-      emo.className = 'emotion';
-      emo.textContent = `🧠 Detected Emotion: ${emotion}`;
-      div.appendChild(emo);
+    div.className = 'bubble ' + sender;
+
+    if (sender === 'bot' && emotion) {
+        const emoji = emotionToEmoji(emotion);
+        div.innerText = `${emoji} ${text}\n\nDetected Emotion: ${emotion}`;
+    } else {
+        div.innerText = text;
     }
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
 
-  async function sendMessage() {
-    const input = document.getElementById('message');
-    const text = input.value.trim();
-    if (!text) return;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
 
-    addBubble(text, 'user');
-    input.value = '';
+async function typeEffect(div, fullText) {
+    div.innerText = '';
+    for (let i = 0; i < fullText.length; i++) {
+        div.innerText += fullText[i];
+        await new Promise(r => setTimeout(r, 20));  // typing speed
+    }
+}
 
-    // 🟢 Call your FastAPI backend (hosted on Vercel)
-    const res = await fetch('https://your-vercel-url.vercel.app/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
+sendBtn.onclick = async () => {
+    const msg = inputBox.value.trim();
+    if (!msg) return;
+    addMessage(msg, 'user');
+    inputBox.value = '';
+
+    // Add typing...
+    const botDiv = document.createElement('div');
+    botDiv.className = 'bubble bot';
+    botDiv.innerText = 'Typing...';
+    messages.appendChild(botDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
     });
     const data = await res.json();
 
-    if (data.response) {
-      addBubble(data.response, 'bot', data.detected_emotion);
+    if (data.error) {
+        botDiv.innerText = '⚠️ Error: ' + data.error;
     } else {
-      addBubble('⚠️ Error occurred.', 'bot');
+        const emoji = emotionToEmoji(data.detected_emotion);
+        const text = `${emoji} ${data.response}\n\nDetected Emotion: ${data.detected_emotion}`;
+        await typeEffect(botDiv, text);
     }
-  }
+
+    messages.scrollTop = messages.scrollHeight;
+};
+
+inputBox.addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendBtn.click();
+});
 </script>
 
 </body>

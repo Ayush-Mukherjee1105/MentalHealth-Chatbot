@@ -9,40 +9,41 @@ import google.generativeai as genai
 from transformers import pipeline
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
-# === Load .env ===
+# Load .env
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# === Configure Gemini ===
+# Configure Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 gen_model = genai.GenerativeModel("gemini-pro")
 
-# === Load HuggingFace classifier ===
+# Load emotion classifier
 classifier = pipeline("text-classification", model="bhadresh-savani/distilbert-base-uncased-emotion", return_all_scores=False)
 
-# === FastAPI app ===
+# FastAPI app
 app = FastAPI()
 
-# Allow CORS (so frontend can call backend)
+# Allow frontend calls (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change to your frontend domain in production!
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# === Logging file setup ===
+# Log file setup
 LOG_FILE = "conversation_log.csv"
 if not os.path.exists(LOG_FILE):
     pd.DataFrame(columns=["timestamp", "user_input", "emotion", "chatbot_response"]).to_csv(LOG_FILE, index=False)
 
-# === Request schema ===
+# Schema
 class ChatRequest(BaseModel):
     message: str
 
-# === Chat Endpoint ===
+# Chat Endpoint
 @app.post("/chat")
 async def chat(request: ChatRequest):
     try:
@@ -52,7 +53,7 @@ async def chat(request: ChatRequest):
         emotion_result = classifier(message)
         detected_emotion = emotion_result[0]['label']
 
-        # Create Gemini prompt
+        # Gemini response
         prompt = (
             "You are a compassionate mental health support chatbot.\n"
             f"The user is feeling '{detected_emotion}' and said: '{message}'\n"
@@ -60,7 +61,7 @@ async def chat(request: ChatRequest):
         )
         gemini_response = gen_model.generate_content(prompt).text.strip()
 
-        # Log conversation
+        # Log
         timestamp = datetime.now().isoformat()
         log_entry = pd.DataFrame([[timestamp, message, detected_emotion, gemini_response]],
                                  columns=["timestamp", "user_input", "emotion", "chatbot_response"])
@@ -73,9 +74,11 @@ async def chat(request: ChatRequest):
 
     except Exception as e:
         return {"error": str(e)}
-    
-    
 
+# Mount static frontend
+app.mount("/static", StaticFiles(directory="../static"), name="static")
+
+# Serve index.html at "/"
 @app.get("/")
-async def root():
-    return FileResponse(os.path.join("static", "index.html"))
+async def serve_frontend():
+    return FileResponse("../static/index.html")
