@@ -1,0 +1,39 @@
+# Ignore Python cache files
+pycache/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Ignore virtual environment (adjust folder name if different)
+myenv/
+venv/
+env/
+
+# Ignore dotenv files (for secrets like API keys)
+.env
+.env.*
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and CSVs (optional)
+*.log
+conversation_log.csv
+
+# Ignore Hugging Face Transformers cache
+.cache/
+huggingface/
+
+# Ignore Jupyter/IPython files (if any)
+.ipynb_checkpoints/
+
+# Ignore VSCode and PyCharm settings (optional)
+.vscode/
+.idea/
+
+# Ignore data outputs (optional; adjust if needed)
+data/output/
+
+# Ignore streamlit temporary files
+.streamlit/config.toml
