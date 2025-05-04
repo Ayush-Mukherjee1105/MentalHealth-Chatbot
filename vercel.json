@@ -4,7 +4,8 @@
       { "src": "api/index.py", "use": "@vercel/python" }
     ],
     "routes": [
-      { "src": "/chat", "methods": ["POST"], "dest": "api/index.py" }
+      { "src": "/chat", "methods": ["POST"], "dest": "api/index.py" },
+      { "src": "/", "methods": ["GET"], "dest": "api/index.py" }
     ]
   }
   
