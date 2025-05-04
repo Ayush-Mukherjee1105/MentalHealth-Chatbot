@@ -32,8 +32,3 @@ huggingface/
 .vscode/
 .idea/
 
-# Ignore data outputs (optional; adjust if needed)
-data/output/
-
-# Ignore streamlit temporary files
-.streamlit/config.toml

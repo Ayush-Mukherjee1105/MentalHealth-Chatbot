@@ -8,5 +8,6 @@ datasets
 wordcloud
 google-generativeai
 python-dotenv
-fastapi
-uvicorn
+steamlit
+streamlit-chat
+streamlit-aggrid
