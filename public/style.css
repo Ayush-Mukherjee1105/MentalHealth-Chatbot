@@ -1,0 +1,30 @@
+body {
+    background-color: #121212;
+    color: #eee;
+    font-family: sans-serif;
+    padding: 1rem;
+  }
+  .chat-container {
+    max-width: 600px;
+    margin: auto;
+  }
+  #chat-box {
+    border: 1px solid #333;
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+  }
+  .bot {
+    color: lightgreen;
+  }
+  .user {
+    color: #80cbc4;
+  }
+  #typing-indicator {
+    font-style: italic;
+  }
+  .hidden {
+    display: none;
+  }
+  
